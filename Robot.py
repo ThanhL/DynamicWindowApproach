@@ -27,9 +27,8 @@ class DifferentialRobot():
         self.robot_radius = robot_config["robot_radius"]
 
 
-        ### State space: (x,y,theta).T
+        ### State space: (x,y,theta, v, omega).T
         self.x_state = x_init
-
 
 
     def motion_model(self, x_state, u_t, dt):
@@ -39,11 +38,13 @@ class DifferentialRobot():
         u_t: Robot input, u_t = (v_t, omega_t) = (commanded linear vel, commanded angular vel)
         """
         # TODO: probably keep it as state
-        x_t, y_t, theta_t = x_state
+        x_t, y_t, theta_t, v_t, omega_t = x_state
 
         x_state[0] += u_t[0] * dt * np.cos(theta_t)
         x_state[1] += u_t[0] * dt * np.sin(theta_t)
         x_state[2] += u_t[1] * dt
+        x_state[3] = u_t[0]
+        x_state[4] = u_t[1]
 
         return x_state
 
@@ -66,6 +67,6 @@ if __name__ == "__main__":
                     "robot_radius": 1.
                     }
 
-    x_init = np.array([0.0, 0.0, 0.0])
+    x_init = np.array([0.0, 0.0, 0.0, 0.0, 0.0])
 
 
