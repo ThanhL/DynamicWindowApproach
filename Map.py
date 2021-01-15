@@ -5,6 +5,11 @@ class Map():
         ### Constructor variables
         self.map_size_x = 100
         self.map_size_y = 100
+
+        self.min_x = min_x
+        self.max_x = max_x
+        self.min_y = min_y
+        self.max_y = max_y
         
         ### Obstacles generation
         self.obstacles = self.generate_obstacles(num_obstacles, min_x, max_x, min_y, max_y)
