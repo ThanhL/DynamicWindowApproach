@@ -131,7 +131,7 @@ class DWAPlanner():
                 ### Cost calculation
                 angle_cost = self.alpha * self.calc_goal_heuristic(trajectory, robot_goal)
                 dist_cost = self.beta * self.calc_obs_dist_heuristic(trajectory, obstacles)
-                vel_cost = self.gamma * self.calc_vel_heuristic(trajectory)
+                vel_cost = self.gamma * self.calc_vel_heuristic(trajectory, self.max_vel)
                 
                 # Total cost
                 total_cost = angle_cost + dist_cost + vel_cost
@@ -211,8 +211,14 @@ class DWAPlanner():
         return cost
 
     # 'vel' heuristic
-    def calc_vel_heuristic(self, trajectory):
-        return 0.0
+    def calc_vel_heuristic(self, trajectory, vel_ref):
+        ### Calculate the cost for speed
+        # We can just take the squared error between the desired maximum speed 
+        # and the trajectory speed! It's like in control systems!
+        # I.e the error is the cost!
+        vel_error = vel_ref - trajectory[-1,3]
+
+        return vel_error
 
 
 

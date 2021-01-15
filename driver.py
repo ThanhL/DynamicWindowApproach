@@ -101,7 +101,7 @@ def main():
                     "minimum_omega": -2.84,
                     "maximum_omega": 2.84,
                     "maximum_acceleration": 2,
-                    "maximum_angular_acceleration": np.deg2rad(20), 
+                    "maximum_angular_acceleration": np.deg2rad(40), 
 
                     "v_resolution": 0.02,
                     "omega_resolution": np.deg2rad(0.1),
@@ -134,11 +134,11 @@ def main():
     planner_config = {
                     "alpha": 0.15,
                     "beta": 1.0,
-                    "gamma": 1.0,
+                    "gamma": 0.1,
 
                     "delta_time": DT,
-                    # "n_horizon": 25
-                    "n_horizon": 25
+                    "n_horizon": 30
+                    # "n_horizon": 60
                     }
 
     dwa_planner = DWAPlanner(planner_config=planner_config,
