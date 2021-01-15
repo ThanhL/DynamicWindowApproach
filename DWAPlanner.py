@@ -66,9 +66,9 @@ class DWAPlanner():
             min(Vs[3], Vd[3])]          # Resulting Maximum Angular velocity Vr_omega_max
 
 
-        print("Vs: ", Vs)
-        print("Vd: ", Vd)
-        print("Vr: ", Vr)
+        # print("Vs: ", Vs)
+        # print("Vd: ", Vd)
+        # print("Vr: ", Vr)
 
         Vr_v_min = max(Vs[0], Vd[0])        # Resulting Minimum Linear velocity Vr_v_min
         Vr_v_max = min(Vs[1], Vd[1])        # Resulting Maximum Linear velocity Vr_v_max
@@ -94,13 +94,14 @@ class DWAPlanner():
         return trajectory
 
 
-    def calc_dwa_control(self, robot_pose, robot_goal):
+    def calc_dwa_control(self, robot_pose, robot_goal, obstacles):
         """
         DWA control inputs calculation
         """
         # Best Metrics Initializer
         minimum_cost = np.inf       # Initialize minimum cost to extremely large initially
         best_control_input = np.zeros(2)    # Control input 
+        best_trajectory = deepcopy(robot_pose)
 
         # Compute the resulting search space
         Vr_v, Vr_omega = self.calc_dyn_win(robot_pose)
@@ -126,11 +127,36 @@ class DWAPlanner():
                 # print("traj shape: ", trajectory.shape)
                 trajectory_set = np.vstack((trajectory_set, trajectory[None]))
 
+
+                ### Cost calculation
+                angle_cost = self.alpha * self.calc_goal_heuristic(trajectory, robot_goal)
+                dist_cost = self.beta * self.calc_obs_dist_heuristic(trajectory, obstacles)
+                vel_cost = self.gamma * self.calc_vel_heuristic(trajectory)
+                
+                # Total cost
+                total_cost = angle_cost + dist_cost + vel_cost
+
+
+                # ## Debugging
                 # print("(v,r): ({:.3f}, {:.3f})".format(v, omega))
                 # print("robot pose: ", x_init)
-                # print("traj: ", trajectory)
+                # # print("traj: ", trajectory)
+
+                # print("angle_cost: {:.4f}".format(angle_cost))
+                # print("dist_cost: {:.4f}".format(dist_cost))
+                # print("vel_cost: {:.4f}".format(vel_cost))
                 # print()
 
+                ### Update best costs & store the best control inputs + trajectory
+                if minimum_cost >= total_cost:
+                    # print("[!] Best Found (v,w): ({:.3f}, {:.3f})".format(v, omega))
+
+                    minimum_cost = total_cost
+                    best_control_input[:] = control_input
+                    best_trajectory = trajectory
+
+        print("best_control_input: ", best_control_input)
+        print("minimum_cost: ", minimum_cost)
         print("Vr_v: ", Vr_v)
         print("Vr_omega: ", Vr_omega)
         print("num_possible_trajectories: ", num_possible_trajectories)
@@ -138,24 +164,56 @@ class DWAPlanner():
         print("trajectory_set_shape: ", trajectory_set.shape)
 
 
-        return None, trajectory_set
+        return best_control_input, best_trajectory, trajectory_set
 
     ### Heuristics (from DWA paper)
     # 'angle' heuristic
-    def calc_obs_dist_heuristic(self):
-        return
+    def calc_obs_dist_heuristic(self, trajectory, obstacles):
+        return 0.0
 
     # 'dist' heuristic
-    def calc_goal_heuristic(self):
-        return
+    def calc_goal_heuristic(self, trajectory, goal_pose):
+        ### Calculation of euclidean heuristic
+        goal_pose_x, goal_pose_y, goal_pose_theta, _, _ = goal_pose
+        traj_end_x, traj_end_y, traj_end_theta, _, _ = trajectory[-1]
+
+        # Magnitude calculations
+        goal_mag = np.sqrt(goal_pose_x**2 + goal_pose_y**2)
+        traj_end_mag = np.sqrt(traj_end_x**2 + traj_end_y**2)
+
+        # Delta
+        delta_x = goal_pose_x - traj_end_x
+        delta_y = goal_pose_y - traj_end_y
+
+        # Dot product between trajectory end and goal pose
+        dot_product = (goal_pose_x * traj_end_x) + (goal_pose_y * traj_end_y)
+        error_cos_theta = dot_product / (goal_mag * traj_end_mag + np.finfo(np.float32).eps)
+        error_angle = np.arccos(error_cos_theta) 
+
+
+        # ### Orientation error
+        # error_angle = np.arctan2(delta_y, delta_x) - traj_end_theta
+
+        ### Euclidean istance
+        euclidean_dist_cost = np.sqrt((goal_pose_x - traj_end_x)**2 + (goal_pose_y - traj_end_y)**2)
+
+        cost = error_angle + euclidean_dist_cost
+
+        # error_angle = np.arctan2(delta_x, delta_y)
+        # cost_angle = error_angle - traj_end_theta
+        # cost = np.abs(np.arctan2(np.sin(cost_angle), np.cos(cost_angle)))
+        
+        # print("dot_product: ", dot_product)
+        # print("goal_mag: ", goal_mag)
+        # print("traj_end_mag: ", traj_end_mag)
+
+        # Return error angle as the cost
+        return cost
 
     # 'vel' heuristic
-    def calc_vel_heuristic(self):
-        return
+    def calc_vel_heuristic(self, trajectory):
+        return 0.0
 
-    # Objective function
-    def calc_obj_func(self):
-        return
 
 
 if __name__ == "__main__":

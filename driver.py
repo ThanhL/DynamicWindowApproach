@@ -10,9 +10,9 @@ from DWAPlanner import *
 from utils import *
 
 ### Global simulation params
-MAX_SIM_TIME = 10
+MAX_SIM_TIME = 1000
 
-DT = 0.1        # Delta time
+DT = 0.05        # Delta time
 MAP_MIN_X = -5
 MAP_MAX_X = 5
 MAP_MIN_Y = -5
@@ -21,7 +21,7 @@ MAP_MAX_Y = 5
 # Robot stuff
 INITIAL_ROBOT_STATE = np.array([0.0, 0.0, np.pi/2, 0.0, 0.0])     # Robot initial state [x,y,yaw,v,omega].T
 GOAL_POSITION = np.array([3.0, 3.0])
-GOAL_STATE = np.array([3.0, 3.0, np.pi/2, 0.0, 0.0])
+GOAL_STATE = np.array([-3.0, -3.0, np.pi/2, 0.0, 0.0])
 
 ### Simulator Crux
 def run_sim(robot, world_map, goal_state, planner, dt=DT, render=True):
@@ -49,18 +49,27 @@ def run_sim(robot, world_map, goal_state, planner, dt=DT, render=True):
         # robot.x_state = robot.motion_model(robot.x_state, u_t, DT)
 
         ### DWA control
-        u_t_dwa, trajectory_set = planner.calc_dwa_control(x_state, goal_state)
+        u_t_dwa, best_traj, trajectory_set = planner.calc_dwa_control(x_state, goal_state,
+                                                                    world_map.obstacles)
+        x_state = robot.motion_model(x_state, u_t_dwa, DT)
+        robot.x_state = deepcopy(x_state)
 
+        # print("x_state: ", x_state)
+        # print("robot_state: ", robot.x_state)
+        # print("robot_prev_state: ", robot_prev.x_state)
 
         if render:
             # Clear the figures
             plt.clf()
 
             plot_obstacles(world_map.obstacles)
-            plot_robot(robot_prev)
-            # plot_robot(robot)
+            # plot_robot(robot_prev)
+            plot_robot(robot)
             plot_robot_goalstate(goal_state)
+
             plot_trajectory_set(trajectory_set)
+            plot_trajectory(best_traj, color='g')
+
 
             # # Dummy test
             # plot_trajectory(traj)
@@ -74,8 +83,8 @@ def run_sim(robot, world_map, goal_state, planner, dt=DT, render=True):
             plt.grid(True)
             #plt.pause(0.0001)
 
-            # plt.pause(0.5)
-            plt.waitforbuttonpress()
+            plt.pause(0.00001)
+            # plt.waitforbuttonpress()
 
         robot_prev = deepcopy(robot)
 
@@ -88,11 +97,11 @@ def main():
     ### Robot Creation
     robot_config = {
                     "minimum_velocity": 0.0,
-                    "maximum_velocity": 0.22,
+                    "maximum_velocity": 5,
                     "minimum_omega": -2.84,
                     "maximum_omega": 2.84,
-                    "maximum_acceleration": 0.2,
-                    "maximum_angular_acceleration": np.deg2rad(40), 
+                    "maximum_acceleration": 2,
+                    "maximum_angular_acceleration": np.deg2rad(20), 
 
                     "v_resolution": 0.02,
                     "omega_resolution": np.deg2rad(0.1),
@@ -129,7 +138,7 @@ def main():
 
                     "delta_time": DT,
                     # "n_horizon": 25
-                    "n_horizon": 200
+                    "n_horizon": 25
                     }
 
     dwa_planner = DWAPlanner(planner_config=planner_config,
