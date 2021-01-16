@@ -52,6 +52,20 @@ class DWAPlanner():
         return [self.min_vel, np.sqrt(2) * self.max_acc,                        # Linear velocity
             self.min_omega, np.sqrt(2) * self.max_ang_acc]                      # Angular velocity
 
+    def is_admissable(self, trajectory, control_input, obstacles):
+        ### Control input
+        v, omega = control_input
+
+        ### Calculate distance
+        obs_x, obs_y = obstacles[0:2]
+
+        delta_x = trajectory[:, 0] - obs_x[:, None]
+        delta_y = trajectory[:, 1] - obs_y[:, None]
+
+        dist = np.sqrt(np.square(delta_x) + np.square(delta_y))
+
+
+
     # Calculate resulting search space windows
     def calc_dyn_win(self, robot_state):
         ### Calculate Velocity spaces
@@ -169,7 +183,34 @@ class DWAPlanner():
     ### Heuristics (from DWA paper)
     # 'angle' heuristic
     def calc_obs_dist_heuristic(self, trajectory, obstacles):
-        return 0.0
+        obs_x, obs_y = obstacles[0:2]
+
+        delta_x = trajectory[:, 0] - obs_x[:, None]
+        delta_y = trajectory[:, 1] - obs_y[:, None]
+
+        dist = np.sqrt(np.square(delta_x) + np.square(delta_y))
+
+
+
+        # print("---- Obstaccle Distance heuristic ----")
+        # print(obstacles.shape)
+        # print(trajectory[:, 0:2].shape)
+
+        # print("traj_pos: ", traj_pos)
+        # print("delta_x: ", delta_x)
+        # print("delta_y: ", delta_y)
+
+
+        if self.robot_type == "circle":
+            if np.array(dist <= self.robot_radius).any():
+                # This trajectory collides with an obstacle!
+                return np.inf
+
+        mininum_dist = np.min(dist)
+
+        # Return the inverse since we are trying to maximize the objective func for obstacles
+        # Smaller the dist the higher the robot's desire to move around it
+        return 1.0 / mininum_dist
 
     # 'dist' heuristic
     def calc_goal_heuristic(self, trajectory, goal_pose):
@@ -218,7 +259,11 @@ class DWAPlanner():
         # I.e the error is the cost!
         vel_error = vel_ref - trajectory[-1,3]
 
-        return vel_error
+
+        # MSE
+        # vel_error =  0.5 * (vel_error)**2
+
+        return np.abs(vel_error)
 
 
 

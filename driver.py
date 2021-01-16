@@ -17,11 +17,12 @@ MAP_MIN_X = -5
 MAP_MAX_X = 5
 MAP_MIN_Y = -5
 MAP_MAX_Y = 5
+NUM_OBSTACLES = 20
 
 # Robot stuff
 INITIAL_ROBOT_STATE = np.array([0.0, 0.0, np.pi/2, 0.0, 0.0])     # Robot initial state [x,y,yaw,v,omega].T
 GOAL_POSITION = np.array([3.0, 3.0])
-GOAL_STATE = np.array([-3.0, -3.0, np.pi/2, 0.0, 0.0])
+GOAL_STATE = np.array([3.0, 3.0, np.pi/2, 0.0, 0.0])
 
 ### Simulator Crux
 def run_sim(robot, world_map, goal_state, planner, dt=DT, render=True):
@@ -58,6 +59,8 @@ def run_sim(robot, world_map, goal_state, planner, dt=DT, render=True):
         # print("robot_state: ", robot.x_state)
         # print("robot_prev_state: ", robot_prev.x_state)
 
+
+
         if render:
             # Clear the figures
             plt.clf()
@@ -92,7 +95,8 @@ def main():
     print("[!] Running Dynamic Window Approach Simulation...")
 
     ### Map Creation
-    world_map = Map(min_x=MAP_MIN_X, max_x=MAP_MAX_X, min_y=MAP_MIN_Y, max_y=MAP_MAX_Y)
+    world_map = Map(min_x=MAP_MIN_X, max_x=MAP_MAX_X, min_y=MAP_MIN_Y, max_y=MAP_MAX_Y,
+                    num_obstacles=NUM_OBSTACLES)
 
     ### Robot Creation
     robot_config = {
@@ -103,7 +107,7 @@ def main():
                     "maximum_acceleration": 2,
                     "maximum_angular_acceleration": np.deg2rad(40), 
 
-                    "v_resolution": 0.02,
+                    "v_resolution": 0.05,
                     "omega_resolution": np.deg2rad(0.1),
 
                     "robot_type": "circle",
@@ -132,12 +136,12 @@ def main():
 
     ### Planner Config
     planner_config = {
-                    "alpha": 0.15,
-                    "beta": 1.0,
-                    "gamma": 0.1,
+                    "alpha": 0.8,
+                    "beta": 0.8,
+                    "gamma": 0.4,
 
                     "delta_time": DT,
-                    "n_horizon": 30
+                    "n_horizon": 45
                     # "n_horizon": 60
                     }
 

@@ -23,7 +23,7 @@ def plot_robot_goalstate(robot_goalstate, robot_type="circle"):
     plt.plot(robot_goal_x, robot_goal_y, 'xy')
 
 def plot_obstacles(obstacles):
-    plt.plot(obstacles[:,0], obstacles[:,1], 'sb')
+    plt.plot(obstacles[:,0], obstacles[:,1], '.b')
 
 
 def plot_trajectories(robot_traj_start, robot_traj_goal):
