@@ -64,7 +64,14 @@ class DWAPlanner():
 
         dist = np.sqrt(np.square(delta_x) + np.square(delta_y))
 
+        ### Calculation if admissable
+        v_admissable_criteria = np.sqrt(2 * dist * self.max_acc)
+        omega_admissable_criteria = np.sqrt(2 * dist * self.max_ang_acc)
 
+        if np.array(v <= v_admissable_criteria).any() and np.array(omega <= omega_admissable_criteria).any():
+            return True
+        else:
+            return False
 
     # Calculate resulting search space windows
     def calc_dyn_win(self, robot_state):
@@ -135,39 +142,41 @@ class DWAPlanner():
                 control_input = np.array([v, omega])
                 trajectory = self.generate_trajectory(x_init, control_input)
 
-                # Append predicted trajectory to set
-                # print("traj set shape: ", trajectory_set.shape)
-                # print("robot_shape: ", robot_pose.shape)
-                # print("traj shape: ", trajectory.shape)
-                trajectory_set = np.vstack((trajectory_set, trajectory[None]))
+                ### Check if velocity is admissable
+                if self.is_admissable(trajectory, control_input, obstacles):
+                    # Append predicted trajectory to set
+                    # print("traj set shape: ", trajectory_set.shape)
+                    # print("robot_shape: ", robot_pose.shape)
+                    # print("traj shape: ", trajectory.shape)
+                    trajectory_set = np.vstack((trajectory_set, trajectory[None]))
 
 
-                ### Cost calculation
-                angle_cost = self.alpha * self.calc_goal_heuristic(trajectory, robot_goal)
-                dist_cost = self.beta * self.calc_obs_dist_heuristic(trajectory, obstacles)
-                vel_cost = self.gamma * self.calc_vel_heuristic(trajectory, self.max_vel)
-                
-                # Total cost
-                total_cost = angle_cost + dist_cost + vel_cost
+                    ### Cost calculation
+                    angle_cost = self.alpha * self.calc_goal_heuristic(trajectory, robot_goal)
+                    dist_cost = self.beta * self.calc_obs_dist_heuristic(trajectory, obstacles)
+                    vel_cost = self.gamma * self.calc_vel_heuristic(trajectory, self.max_vel)
+                    
+                    # Total cost
+                    total_cost = angle_cost + dist_cost + vel_cost
 
 
-                # ## Debugging
-                # print("(v,r): ({:.3f}, {:.3f})".format(v, omega))
-                # print("robot pose: ", x_init)
-                # # print("traj: ", trajectory)
+                    # ## Debugging
+                    # print("(v,r): ({:.3f}, {:.3f})".format(v, omega))
+                    # print("robot pose: ", x_init)
+                    # # print("traj: ", trajectory)
 
-                # print("angle_cost: {:.4f}".format(angle_cost))
-                # print("dist_cost: {:.4f}".format(dist_cost))
-                # print("vel_cost: {:.4f}".format(vel_cost))
-                # print()
+                    # print("angle_cost: {:.4f}".format(angle_cost))
+                    # print("dist_cost: {:.4f}".format(dist_cost))
+                    # print("vel_cost: {:.4f}".format(vel_cost))
+                    # print()
 
-                ### Update best costs & store the best control inputs + trajectory
-                if minimum_cost >= total_cost:
-                    # print("[!] Best Found (v,w): ({:.3f}, {:.3f})".format(v, omega))
+                    ### Update best costs & store the best control inputs + trajectory
+                    if minimum_cost >= total_cost:
+                        # print("[!] Best Found (v,w): ({:.3f}, {:.3f})".format(v, omega))
 
-                    minimum_cost = total_cost
-                    best_control_input[:] = control_input
-                    best_trajectory = trajectory
+                        minimum_cost = total_cost
+                        best_control_input[:] = control_input
+                        best_trajectory = trajectory
 
         print("best_control_input: ", best_control_input)
         print("minimum_cost: ", minimum_cost)

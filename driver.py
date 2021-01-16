@@ -22,7 +22,7 @@ NUM_OBSTACLES = 20
 # Robot stuff
 INITIAL_ROBOT_STATE = np.array([0.0, 0.0, np.pi/2, 0.0, 0.0])     # Robot initial state [x,y,yaw,v,omega].T
 GOAL_POSITION = np.array([3.0, 3.0])
-GOAL_STATE = np.array([3.0, 3.0, np.pi/2, 0.0, 0.0])
+GOAL_STATE = np.array([3.0, 0.0, np.pi/2, 0.0, 0.0])
 
 ### Simulator Crux
 def run_sim(robot, world_map, goal_state, planner, dt=DT, render=True):
