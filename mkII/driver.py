@@ -17,20 +17,45 @@ MAP_MIN_X = -5
 MAP_MAX_X = 5
 MAP_MIN_Y = -5
 MAP_MAX_Y = 5
-NUM_OBSTACLES = 40
+NUM_OBSTACLES = 50
 
 # Robot stuff
 INITIAL_ROBOT_STATE = np.array([0.0, 0.0, np.pi/2, 0.0, 0.0])     # Robot initial state [x,y,yaw,v,omega].T
-GOAL_POSITION = np.array([3.0, 3.0])
-GOAL_STATE = np.array([5.0, 5.0, np.pi/2, 0.0, 0.0])
+GOAL_POSE = np.array([3.0, 0.0, np.pi/2])
 
 ### Simulator Crux
-def run_sim(robot, world_map, goal_state, planner, dt=DT, render=True):
+def run_sim(robot, world_map, robot_goal_pose, planner, dt=DT, render=True):
     print("[!] Running Dynamic Window Approach Simulation...")
 
+    ### Plot initial environment
+    if render:
+        # Clear the figures
+        plt.clf()
+
+        # Plot environment assets
+        plot_obstacles(world_map.obstacles)
+        plot_robot(robot)
+        plot_robot_goalpose(robot_goal_pose)
+
+        # Nearest obstalces
+        nearest_obstacles = planner.calculate_nearest_obstacles(robot.x_state, world_map.obstacles)
+        print("Nearest obstacles: ", nearest_obstacles)
+
+        # Figure plot settings
+        plt.axis("equal")
+        plt.xlim([world_map.min_x + np.sign(world_map.min_x) * 2,       # Added extra buffer for x,y axes limit 
+                world_map.max_x + np.sign(world_map.max_x) * 2])
+        plt.ylim([world_map.min_y + np.sign(world_map.min_y) * 2, 
+                world_map.max_y + np.sign(world_map.max_y) *2])
+        plt.grid(True)
+        plt.waitforbuttonpress()
+
+
+    ### Run DWA planner
     # Simulation start time
     time = 0.0
-    x_state = robot.x_state
+
+
 
     while time <= MAX_SIM_TIME:     # TODO: probably remove this for a "reach goal" check
         print("[+] Elapsed sim_time: {:.3f}".format(time))
@@ -38,43 +63,21 @@ def run_sim(robot, world_map, goal_state, planner, dt=DT, render=True):
         # Update sim time
         time += DT
         
-        # # TODO: Remove. Dummy input for now
-        # u_t = np.array([0.1 * np.exp(-time), 0.1 * np.exp(-time)])
-        # u_t = np.array([0.1, -0.1])
-
-
-        # # Trajectory
-        # traj = planner.generate_trajectory(robot.x_state, u_t)
-
-        # robot.x_state = robot.motion_model(robot.x_state, u_t, DT)
-
         ### DWA control
-        u_t_dwa, best_traj, trajectory_set = planner.calc_dwa_control(x_state, goal_state,
+        u_t_dwa, best_traj, trajectory_set = planner.calc_dwa_control(robot.x_state, robot_goal_pose,
                                                                     world_map.obstacles)
-        x_state = robot.motion_model(x_state, u_t_dwa, DT)
-        robot.x_state = deepcopy(x_state)
-
-        # print("x_state: ", x_state)
-        # print("robot_state: ", robot.x_state)
-        # print("robot_prev_state: ", robot_prev.x_state)
-
-
+        robot.update_state(u_t_dwa, DT)
 
         if render:
             # Clear the figures
             plt.clf()
 
             plot_obstacles(world_map.obstacles)
-            # plot_robot(robot_prev)
             plot_robot(robot)
-            plot_robot_goalstate(goal_state)
+            plot_robot_goalpose(robot_goal_pose)
 
             plot_trajectory_set(trajectory_set)
             plot_trajectory(best_traj, color='g')
-
-
-            # # Dummy test
-            # plot_trajectory(traj)
 
             # Plot details
             plt.axis("equal")
@@ -88,43 +91,27 @@ def run_sim(robot, world_map, goal_state, planner, dt=DT, render=True):
             plt.pause(0.00001)
             # plt.waitforbuttonpress()
 
-def main():
-    print("[!] Running Dynamic Window Approach Simulation...")
 
+def main():
     ### Map Creation
     world_map = Map(min_x=MAP_MIN_X, max_x=MAP_MAX_X, min_y=MAP_MIN_Y, max_y=MAP_MAX_Y,
                     num_obstacles=NUM_OBSTACLES)
 
     ### Robot Creation
     robot_config = {
-                    "minimum_velocity": -0.5,
-                    "maximum_velocity": 5,
+                    "minimum_velocity": -0.0,
+                    "maximum_velocity": 2,
                     "minimum_omega": -2.84,
                     "maximum_omega": 2.84,
-                    "maximum_acceleration": 2,
+                    "maximum_acceleration": 1.2,
                     "maximum_angular_acceleration": np.deg2rad(40), 
 
-                    "v_resolution": 0.02,
-                    "omega_resolution": np.deg2rad(0.1),
+                    "v_resolution": 0.05,
+                    "omega_resolution": np.deg2rad(0.25),
 
                     "robot_type": "circle",
                     "robot_radius": 0.2
                     }
-
-    # robot_config = {
-    #                 "minimum_velocity": 0.0,
-    #                 "maximum_velocity": 0.22,
-    #                 "minimum_omega": -2.84,
-    #                 "maximum_omega": 2.84,
-    #                 "maximum_acceleration": 0.2,
-    #                 "maximum_angular_acceleration": np.deg2rad(40), 
-
-    #                 "v_resolution": 0.02,
-    #                 "omega_resolution": np.deg2rad(5),
-
-    #                 "robot_type": "circle",
-    #                 "robot_radius": 0.2
-    #                 }
 
     robot_initial_state = INITIAL_ROBOT_STATE
 
@@ -134,7 +121,7 @@ def main():
     ### Planner Config
     planner_config = {
                     "alpha": 0.8,
-                    "beta": 20.0,
+                    "beta": 0.8,
                     "gamma": 0.4,
 
                     "delta_time": DT,
@@ -143,11 +130,10 @@ def main():
                     }
 
     dwa_planner = DWAPlanner(planner_config=planner_config,
-                            robot_config=robot_config,
                             robot=fido_robot)
 
     ### Running the simulation
-    run_sim(robot=fido_robot, world_map=world_map, goal_state=GOAL_STATE,
+    run_sim(robot=fido_robot, world_map=world_map, robot_goal_pose=GOAL_POSE,
         planner=dwa_planner)
     
 
