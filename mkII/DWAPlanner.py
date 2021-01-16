@@ -132,6 +132,10 @@ class DWAPlanner():
                         best_control_input[:] = control_input
                         best_trajectory = trajectory
 
+                        ### Prevention of getting stuck in (v,omega) = 0 search space
+                        if (abs(control_input[0]) < 0.001 and abs(robot_state[3]) < 0.001):
+                            control_input[0] = -self.robot.max_omega
+
         print("best_control_input: ", best_control_input)
         print("minimum_cost: ", minimum_cost)
         print("Vr_v: ", Vr_v)
@@ -179,7 +183,6 @@ class DWAPlanner():
 
 
                 if euclidean_dist_to_obs <= self.robot.robot_radius:
-                    print("[!] IM IN")
                     return np.inf
 
                 if euclidean_dist_to_obs < min_dist:

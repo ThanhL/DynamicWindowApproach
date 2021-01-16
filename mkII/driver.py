@@ -17,7 +17,7 @@ MAP_MIN_X = -5
 MAP_MAX_X = 5
 MAP_MIN_Y = -5
 MAP_MAX_Y = 5
-NUM_OBSTACLES = 50
+NUM_OBSTACLES = 40
 
 # Robot stuff
 INITIAL_ROBOT_STATE = np.array([0.0, 0.0, np.pi/2, 0.0, 0.0])     # Robot initial state [x,y,yaw,v,omega].T
@@ -101,8 +101,8 @@ def main():
     robot_config = {
                     "minimum_velocity": -0.0,
                     "maximum_velocity": 2,
-                    "minimum_omega": -2.84,
-                    "maximum_omega": 2.84,
+                    "minimum_omega": -np.pi/2,
+                    "maximum_omega": np.pi/2,
                     "maximum_acceleration": 1.2,
                     "maximum_angular_acceleration": np.deg2rad(40), 
 
@@ -125,7 +125,7 @@ def main():
                     "gamma": 0.4,
 
                     "delta_time": DT,
-                    "n_horizon": 60
+                    "n_horizon": 20
                     # "n_horizon": 60
                     }
 
