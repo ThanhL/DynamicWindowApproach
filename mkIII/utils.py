@@ -27,7 +27,7 @@ def plot_robot_goalpose(robot_goal_pose):
     robot_gx, robot_gy, robot_gtheta = robot_goal_pose
 
     # Plot robot goal
-    plt.plot(robot_gx, robot_gy, 'xy')
+    plt.plot(robot_gx, robot_gy, 'Dc')
 
 def plot_obstacles(obstacles):
     """
@@ -39,9 +39,6 @@ def plot_sim_environment(robot, robot_goal_pose, world_map):
     """ 
     Plots the robot, robot's goal pose, and the world map's obstacles
     """
-    # Clear the figures
-    plt.clf()
-
     # Plot simulator assets
     plot_obstacles(world_map.obstacles)
     plot_robot(robot)

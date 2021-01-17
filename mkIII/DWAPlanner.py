@@ -27,16 +27,29 @@ class DWAPlanner():
     ### Dynamic window calculations
     # Vs: Space of possible velocities
     def calculate_Vs(self):
+        """
+        Calculates the velocity search space ranges (Vs from DWA paper)
+        """
         return [self.robot.min_vel, self.robot.max_vel, self.robot.min_omega, self.robot.max_omega]
 
-    # Vr: Dynamic window for velocities
+    # Vd: Dynamic window for velocities
     def calculate_Vd(self, robot_state):
+        """
+        Calculates the dynamic window search space ranges (Vd from DWA paper)
+        Implementation of EQN 15.
+        """
         robot_x, robot_y, robot_theta, v_a, omega_a = robot_state
         return [v_a - self.robot.max_acc * self.dt, v_a + self.robot.max_acc * self.dt,               # Linear velocity
             omega_a - self.robot.max_ang_acc * self.dt, omega_a + self.robot.max_ang_acc * self.dt]   # Angular velocity
 
     # Va: Admissable velocities
     def is_admissable(self, trajectory, control_input, nearest_obstacles):
+        """
+        Calculates the admissable velocities search space ranges (Va from DWA paper)
+
+        Given the obstacles and accelerations for breakage, the admissable velocities are calculated
+        using EQN 14. (v, omega) pairs are checked to see if they satisfy EQN 14.
+        """
         ### Extract control input
         v, omega = control_input
 
@@ -53,6 +66,12 @@ class DWAPlanner():
 
     # Vr = INTERSECTION(Va,Vr,Vs): Calculate resulting search space windows
     def calculate_Vr(self, robot_state):
+        """
+        Calculates the resulting velocity search space 
+
+        Implements EQN 16, INTERSECT(Vs, Vd). Note the admissable velocity Va is checked after
+        iterating through the (v,omega) pairs of the search space (Vr_v, Vr_omega).
+        """
         ### Calculate Velocity spaces
         Vs = self.calculate_Vs()
         Vd = self.calculate_Vd(robot_state)
@@ -72,6 +91,10 @@ class DWAPlanner():
     ### Dynamic Window Approach crux (control calculations)
     # Generation of circular trajectories given control input
     def generate_trajectory(self, x, u):
+        """
+        Generates circular trajectories given control input pair (v,omega) for n future timesteps
+        into the future. 
+        """
         x_state = deepcopy(x)
         trajectory = x_state
 
@@ -81,14 +104,16 @@ class DWAPlanner():
 
         return trajectory
 
-
     def calc_dwa_control(self, robot_state, robot_goal, obstacles):
         """
-        DWA control inputs calculation
+        Calculates the dynamic window approach control inputs required for path planning.
+
+        Returns the best control inputsm best trajectory and the resulting trajectory found
+        from evaluating the velocity search space.
         """ 
         # Best Metrics Initializer
-        minimum_cost = np.inf       # Initialize minimum cost to extremely large initially
-        best_control_input = np.zeros(2)    # Control input 
+        minimum_cost = np.inf               # Initialize minimum cost to extremely large initially
+        best_control_input = np.zeros(2) 
         best_trajectory = deepcopy(robot_state)
 
         # Compute the resulting velocity search space
@@ -98,7 +123,7 @@ class DWAPlanner():
         num_possible_trajectories = Vr_v.shape[0] * Vr_omega.shape[0]
         trajectory_set = np.zeros((0, self.n_horizon+1, robot_state.shape[0]))
 
-        # Evaluate 
+        ### Evaluate (v,omega) pairs and searches for the best control input + trajectory
         x_init = deepcopy(robot_state)
         for v in Vr_v:
             for omega in Vr_omega:
@@ -128,12 +153,12 @@ class DWAPlanner():
                         best_control_input[:] = control_input
                         best_trajectory = trajectory
 
-        print("[!] Best Found (v,w): ({:.3f}, {:.3f}) \t,Cost: {:.3f}".format(v, omega, minimum_cost))
+        print("[!] Best Found (v,w): ({:.3f}, {:.3f}) \tCost: {:.3f}".format(v, omega, minimum_cost))
 
         ### Prevention of getting stuck in (v,omega) = 0 search space
         if (abs(best_control_input[0]) < self.stuck_space_tol and abs(robot_state[3]) < self.stuck_space_tol):
             print("[!] Robot stuck in 0 velocity, sending max spin to get out of region.")
-            control_input[0] = -self.robot.max_omega
+            control_input[0] = np.pi / 3
 
         print("robot state: ", robot_state)
         print("best_control_input: ", best_control_input)
@@ -150,6 +175,9 @@ class DWAPlanner():
     ### Heuristics (from DWA paper)
     # Calculation of the nearest obstacles
     def calculate_nearest_obstacles(self, state, obstacles):
+        """
+        Calculates the nearest obstacles w.r.t to the robot current state and obstacle position
+        """
         robot_pos = state[0:2]
         nearest_obstacles_ind = np.where(
             np.linalg.norm(robot_pos - obstacles, axis=1) < self.obstacle_dist_tol)
@@ -161,8 +189,7 @@ class DWAPlanner():
     # 'angle' heuristic
     def calc_obs_dist_heuristic(self, trajectory, nearest_obstacles):
         """
-        dist(v,omega) Obstacle Heuristic
-        This is the cost function
+        Calculates the Obstacle Heuristic cost function (dist(v,omega) from DWA paper)
         """
         trajectory_positions = trajectory[:, 0:2]
         obs_x = nearest_obstacles[:,0]
@@ -185,6 +212,9 @@ class DWAPlanner():
 
     # 'dist' heuristic
     def calc_goal_heuristic(self, trajectory, goal_pose):
+        """
+        Calculates the goal heuristic cost function (heading(v,omega) from DWA paper)
+        """
         ### Extract positions
         goal_pos = goal_pose[0:2]
         traj_pos = trajectory[-1, 0:2]  # Only considering end trajectory for goal heuristic
@@ -206,7 +236,9 @@ class DWAPlanner():
 
     # 'vel' heuristic
     def calc_vel_heuristic(self, trajectory, vel_ref):
-        ### Calculate the cost for speed
+        """
+        Calculates the cost function for the speed to support fast movements (vel(v,omega) from DWA paper)
+        """
         # We can just take the squared error between the desired maximum speed 
         # and the trajectory speed! It's like in control systems!
         # I.e the error is the cost!

@@ -17,14 +17,18 @@ MAP_MIN_X = -5
 MAP_MAX_X = 5
 MAP_MIN_Y = -5
 MAP_MAX_Y = 5
-NUM_OBSTACLES = 25
+NUM_OBSTACLES = 60
 
 ### Simulator Crux
 def run_sim(robot, world_map, robot_goal_pose, planner, goal_dist_thresh=0.2, dt=DT, render=True):
+    """ 
+    Simulates Dynamic Window Approach algorithm
+    """
     print("[!] Running Dynamic Window Approach Simulation...")
 
     ### Plot initial environment
     if render:
+        plt.clf()
         plot_sim_environment(robot, robot_goal_pose, world_map)
         
         print("--- Press the any key on the figure to start the simulation ---")
@@ -52,10 +56,10 @@ def run_sim(robot, world_map, robot_goal_pose, planner, goal_dist_thresh=0.2, dt
             robot.update_state(u_t_dwa, DT)
 
         if render:
-            plot_sim_environment(robot, robot_goal_pose, world_map)
-            plot_trajectory_set(trajectory_set)
+            plt.clf()
+            plot_trajectory_set(trajectory_set, plot_n_traj=20)
             plot_trajectory(best_traj, color='g')
-
+            plot_sim_environment(robot, robot_goal_pose, world_map)
             plt.pause(0.00001)
 
 
@@ -92,7 +96,7 @@ def main():
                     "minimum_omega": -np.pi/2,
                     "maximum_omega": np.pi/2,
                     "maximum_acceleration": 2.5,
-                    "maximum_angular_acceleration": np.deg2rad(40), 
+                    "maximum_angular_acceleration": np.deg2rad(60), 
 
                     "v_resolution": 0.1,
                     "omega_resolution": np.deg2rad(0.25),
@@ -114,8 +118,7 @@ def main():
                     "gamma": 0.6,
 
                     "delta_time": DT,
-                    "n_horizon": 60,
-                    # "n_horizon": 60
+                    "n_horizon": 20,
 
                     "obstacle_distance_tolerance": 5,
                     "stuck_space_tolerance": 0.001

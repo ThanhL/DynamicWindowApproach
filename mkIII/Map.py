@@ -16,6 +16,12 @@ class Map():
                                                 min_x, max_x, min_y, max_y)
 
     def generate_obstacles(self, num_obstacles, min_x, max_x, min_y, max_y):
+        """
+        Simple obstacle generation function.
+
+        This function does not take into account start/end pose so it might generate am
+        obstacle on top of the start/end pose
+        """
         ### Randomly generate obstacles x,y coord with map considerations
         obs_x = np.random.uniform(low=min_x, high=max_x, size=(num_obstacles,))
         obs_y = np.random.uniform(low=min_y, high=max_y, size=(num_obstacles,))
@@ -25,6 +31,12 @@ class Map():
 
     def generate_obstacles(self, start_pose, end_pose, num_obstacles, min_x, max_x, min_y, max_y,
                         clearance=0.8):
+        """
+        More complicated obstacle generation function
+
+        Function takes into account start/end pose and regenerates obstacles if the obstacles
+        fall to near these points.
+        """
         ### Randomly generate obstacles x,y coord with map considerations
         obs_x = np.random.uniform(low=min_x, high=max_x, size=(num_obstacles,))
         obs_y = np.random.uniform(low=min_y, high=max_y, size=(num_obstacles,))
@@ -55,7 +67,9 @@ class Map():
         return obs
 
     def regenerate_obstacle(self, pose, obstacle, min_x, max_x, min_y, max_y, clearance):
-        ### Regenerate new obstacle coordinates
+        """
+        Regenerate new obstacle coordinates until they don't fall near the point
+        """
         new_obs_x = np.random.uniform(low=min_x, high=max_x)
         new_obs_y = np.random.uniform(low=min_y, high=max_y)
         new_obs = np.array([new_obs_x, new_obs_y])
