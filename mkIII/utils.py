@@ -30,17 +30,11 @@ def plot_trajectory(trajectory, color='r'):
     Given a trajectory set (in this case a trajectory is vector of robot states)
     Plot the trajectories 
     """
-    plt.plot(trajectory[:,0], trajectory[:,1], color)
+    if trajectory.ndim >= 2:
+        plt.plot(trajectory[:,0], trajectory[:,1], color)
 
-    # for i in range(trajectory.shape[0] - 1):
-    #     delta_x, delta_y, _ = trajectory[i] - trajectory[i+1]
-
-    #     plt.arrow(trajectory[i,0], trajectory[i,1], delta_x, delta_y, color='y')
 
 def plot_trajectory_set(trajectory_set, plot_n_traj=1):
-    # print("trajectory_set: \n", trajectory_set)
-
-    for i in range(0, trajectory_set.shape[0], plot_n_traj):
-
-        # print("trajectory_i: ", trajectory_set[i,:,:])
-        plot_trajectory(trajectory_set[i,:,:])
+    if (trajectory_set.size != 0):
+        for i in range(0, trajectory_set.shape[0], plot_n_traj):
+            plot_trajectory(trajectory_set[i,:,:])

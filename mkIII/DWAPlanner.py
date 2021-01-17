@@ -17,44 +17,41 @@ class DWAPlanner():
         # Number of timesteps for prediction into future (for trajectory generation)
         self.n_horizon = planner_config["n_horizon"]    
 
-        # Distance tolerance to obstacle
-        self.obstacle_dist_tol = 4
+        # Distance tolerance to obstacle (for trajectories)
+        self.obstacle_dist_tol = planner_config["obstacle_distance_tolerance"]
+
+        # 'stuck space' tolerance: the magnitude tolerance for when robot gets stuck @ 0 vel 
+        # (search space & the robot's actual velocity)
+        self.stuck_space_tol = planner_config["stuck_space_tolerance"]
 
     ### Dynamic window calculations
-    # Space of possible velocities
+    # Vs: Space of possible velocities
     def calculate_Vs(self):
         return [self.robot.min_vel, self.robot.max_vel, self.robot.min_omega, self.robot.max_omega]
 
-    # Dynamic windows
+    # Vr: Dynamic window for velocities
     def calculate_Vd(self, robot_state):
         robot_x, robot_y, robot_theta, v_a, omega_a = robot_state
         return [v_a - self.robot.max_acc * self.dt, v_a + self.robot.max_acc * self.dt,               # Linear velocity
             omega_a - self.robot.max_ang_acc * self.dt, omega_a + self.robot.max_ang_acc * self.dt]   # Angular velocity
 
-    # Admissiable velocites
-    def is_admissable(self, trajectory, control_input, obstacles):
-        ### Control input
+    # Va: Admissable velocities
+    def is_admissable(self, trajectory, control_input, nearest_obstacles):
+        ### Extract control input
         v, omega = control_input
 
-        ### Calculate distance
-        print(obstacles.shape)
-        obs_x, obs_y = obstacles[:,0], obstacles[:,1]
-
-        delta_x = trajectory[:, 0] - obs_x[:, None]
-        delta_y = trajectory[:, 1] - obs_y[:, None]
-
-        dist = np.sqrt(np.square(delta_x) + np.square(delta_y))
-
         ### Calculation if admissable
-        v_admissable_criteria = np.sqrt(2 * dist * self.robot.max_acc)
-        omega_admissable_criteria = np.sqrt(2 * dist * self.robot.max_ang_acc)
+        obs_heuristic_dist = self.calc_obs_dist_heuristic(trajectory, nearest_obstacles)
 
-        if np.array(v <= v_admissable_criteria).any() and np.array(omega <= omega_admissable_criteria).any():
+        v_admissable_criteria = np.sqrt(2 * obs_heuristic_dist * self.robot.max_acc)
+        omega_admissable_criteria = np.sqrt(2 * obs_heuristic_dist * self.robot.max_ang_acc)
+
+        if (v <= v_admissable_criteria) and (omega <= omega_admissable_criteria):
             return True
         else:
             return False
 
-    # Calculate resulting search space windows
+    # Vr = INTERSECTION(Va,Vr,Vs): Calculate resulting search space windows
     def calculate_Vr(self, robot_state):
         ### Calculate Velocity spaces
         Vs = self.calculate_Vs()
@@ -88,13 +85,13 @@ class DWAPlanner():
     def calc_dwa_control(self, robot_state, robot_goal, obstacles):
         """
         DWA control inputs calculation
-        """
+        """ 
         # Best Metrics Initializer
         minimum_cost = np.inf       # Initialize minimum cost to extremely large initially
         best_control_input = np.zeros(2)    # Control input 
         best_trajectory = deepcopy(robot_state)
 
-        # Compute the resulting search space
+        # Compute the resulting velocity search space
         Vr_v, Vr_omega = self.calculate_Vr(robot_state)
 
         # Trajectory set (store all possible circular trajectories for visualization)
@@ -113,7 +110,7 @@ class DWAPlanner():
                 nearest_obstacles = self.calculate_nearest_obstacles(robot_state, obstacles)
 
                 ### Check if velocity is admissable
-                if True or self.is_admissable(trajectory, control_input, nearest_obstacles):
+                if self.is_admissable(trajectory, control_input, nearest_obstacles):
                     trajectory_set = np.vstack((trajectory_set, trajectory[None]))
 
                     ### Cost calculation
@@ -127,15 +124,18 @@ class DWAPlanner():
                     ### Update best costs & store the best control inputs + trajectory
                     if minimum_cost >= total_cost:
                         # print("[!] Best Found (v,w): ({:.3f}, {:.3f})".format(v, omega))
-
                         minimum_cost = total_cost
                         best_control_input[:] = control_input
                         best_trajectory = trajectory
 
-                        ### Prevention of getting stuck in (v,omega) = 0 search space
-                        if (abs(control_input[0]) < 0.001 and abs(robot_state[3]) < 0.001):
-                            control_input[0] = -self.robot.max_omega
+        print("[!] Best Found (v,w): ({:.3f}, {:.3f}) \t,Cost: {:.3f}".format(v, omega, minimum_cost))
 
+        ### Prevention of getting stuck in (v,omega) = 0 search space
+        if (abs(best_control_input[0]) < self.stuck_space_tol and abs(robot_state[3]) < self.stuck_space_tol):
+            print("[!] Robot stuck in 0 velocity, sending max spin to get out of region.")
+            control_input[0] = -self.robot.max_omega
+
+        print("robot state: ", robot_state)
         print("best_control_input: ", best_control_input)
         print("minimum_cost: ", minimum_cost)
         print("Vr_v: ", Vr_v)
@@ -160,6 +160,10 @@ class DWAPlanner():
 
     # 'angle' heuristic
     def calc_obs_dist_heuristic(self, trajectory, nearest_obstacles):
+        """
+        dist(v,omega) Obstacle Heuristic
+        This is the cost function
+        """
         trajectory_positions = trajectory[:, 0:2]
         obs_x = nearest_obstacles[:,0]
         obs_y = nearest_obstacles[:,1]
@@ -170,37 +174,33 @@ class DWAPlanner():
 
         if np.array(euclidean_dist <= self.robot.robot_radius).any():
             return np.inf
+        elif euclidean_dist.size == 0:
+            # No nearest osbtacle therefore return cost of 0
+            return 0.0
         else:
+            # Return the inverse since we are trying to maximize the objective func for obstacles
+            # Smaller the dist the higher the robot's desire to move around it
             min_dist = np.min(euclidean_dist)
             return 1.0 / min_dist
 
 
     # 'dist' heuristic
     def calc_goal_heuristic(self, trajectory, goal_pose):
-        ### Calculation of euclidean heuristic
-        goal_pose_x, goal_pose_y, goal_pose_theta = goal_pose
-        traj_end_x, traj_end_y, traj_end_theta, _, _ = trajectory[-1]
+        ### Extract positions
+        goal_pos = goal_pose[0:2]
+        traj_pos = trajectory[-1, 0:2]  # Only considering end trajectory for goal heuristic
+        
+        ### Calculation of angle between goal and trajectory vectors
+        goal_unit_vec = goal_pos / np.linalg.norm(goal_pos)
+        traj_unit_vec = traj_pos / np.linalg.norm(traj_pos)
+        traj_dot_goal = np.dot(goal_unit_vec, traj_unit_vec)
+        
+        error_angle = np.arccos(traj_dot_goal) 
 
-        # Magnitude calculations
-        goal_mag = np.sqrt(goal_pose_x**2 + goal_pose_y**2)
-        traj_end_mag = np.sqrt(traj_end_x**2 + traj_end_y**2)
-
-        # Delta
-        delta_x = goal_pose_x - traj_end_x
-        delta_y = goal_pose_y - traj_end_y
-
-        # Dot product between trajectory end and goal pose
-        dot_product = (goal_pose_x * traj_end_x) + (goal_pose_y * traj_end_y)
-        error_cos_theta = dot_product / (goal_mag * traj_end_mag + np.finfo(np.float32).eps)
-        error_angle = np.arccos(error_cos_theta) 
-
-
-        # ### Orientation error
-        # error_angle = np.arctan2(delta_y, delta_x) - traj_end_theta
-
-        ### Euclidean istance
-        euclidean_dist_cost = np.sqrt((goal_pose_x - traj_end_x)**2 + (goal_pose_y - traj_end_y)**2)
-
+        ### Euclidean cost
+        euclidean_dist_cost = np.linalg.norm(goal_pos - traj_pos)
+        
+        ### Total cost
         cost = error_angle + euclidean_dist_cost
 
         return cost
@@ -213,39 +213,6 @@ class DWAPlanner():
         # I.e the error is the cost!
         vel_error = vel_ref - trajectory[-1,3]
 
-
-        # MSE
-        # vel_error =  0.5 * (vel_error)**2
-
         return np.abs(vel_error)
 
 
-
-if __name__ == "__main__":
-    robot_config = {
-                    "minimum_velocity": 0.1,
-                    "maximum_velocity": 0.22,
-                    "minimum_omega": 0.1,
-                    "maximum_omega": 2.84,
-                    "maximum_acceleration": 0.2,
-                    "maximum_angular_acceleration": np.deg2rad(40), 
-
-                    "v_resolution": 0.02,
-                    "omega_resolution": np.deg2rad(0.1),
-
-                    "robot_type": "circle",
-                    "robot_radius": 1.,
-
-                    }
-
-    planner_config = {
-                    "alpha": 0.15,
-                    "beta": 1.0,
-                    "gamma": 1.0,
-
-                    "delta_time": 0.1,
-                    "n_horizon": 5
-                    }
-
-
-    dwa_planner = DWAPlanner(planner_config)
