@@ -172,7 +172,7 @@ class DWAPlanner():
         dy = trajectory_positions[:, 1] - obs_y[:, None]
         euclidean_dist = np.hypot(dx, dy)
 
-        if np.array(euclidean_dist <= self.robot.robot_radius).any():
+        if np.array(euclidean_dist <= self.robot.robot_radius + 0.2).any():
             return np.inf
         elif euclidean_dist.size == 0:
             # No nearest osbtacle therefore return cost of 0
@@ -183,7 +183,6 @@ class DWAPlanner():
             min_dist = np.min(euclidean_dist)
             return 1.0 / min_dist
 
-
     # 'dist' heuristic
     def calc_goal_heuristic(self, trajectory, goal_pose):
         ### Extract positions
@@ -191,8 +190,8 @@ class DWAPlanner():
         traj_pos = trajectory[-1, 0:2]  # Only considering end trajectory for goal heuristic
         
         ### Calculation of angle between goal and trajectory vectors
-        goal_unit_vec = goal_pos / np.linalg.norm(goal_pos)
-        traj_unit_vec = traj_pos / np.linalg.norm(traj_pos)
+        goal_unit_vec = goal_pos / (np.linalg.norm(goal_pos) +  np.finfo(np.float32).eps)   # Add eps to avoid division by 0
+        traj_unit_vec = traj_pos / (np.linalg.norm(traj_pos) +  np.finfo(np.float32).eps)   # Add eps to avoid division by 0
         traj_dot_goal = np.dot(goal_unit_vec, traj_unit_vec)
         
         error_angle = np.arccos(traj_dot_goal) 
