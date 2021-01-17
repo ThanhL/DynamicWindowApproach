@@ -15,28 +15,13 @@ class Map():
         self.obstacles = self.generate_obstacles(start_pose, end_pose, num_obstacles, 
                                                 min_x, max_x, min_y, max_y)
 
-    def simple_generate_obstacles(self, num_obstacles, min_x, max_x, min_y, max_y):
+    def generate_obstacles(self, num_obstacles, min_x, max_x, min_y, max_y):
         ### Randomly generate obstacles x,y coord with map considerations
         obs_x = np.random.uniform(low=min_x, high=max_x, size=(num_obstacles,))
         obs_y = np.random.uniform(low=min_y, high=max_y, size=(num_obstacles,))
         obs = np.array([obs_x, obs_y]).T
 
         return obs
-
-    def regenerate_obstacle(self, pose, obstacle, min_x, max_x, min_y, max_y, clearance):
-        ### Regenerate new obstacle coordinates
-        new_obs_x = np.random.uniform(low=min_x, high=max_x)
-        new_obs_y = np.random.uniform(low=min_y, high=max_y)
-        new_obs = np.array([new_obs_x, new_obs_y])
-
-        # Regenerate new obstacle until obstacle fits criteria.
-        # BEWARE: This may result in an infinite loop
-        while  np.linalg.norm(pose[0:2] - new_obs) < clearance:
-            new_obs_x = np.random.uniform(low=min_x, high=max_x)
-            new_obs_y = np.random.uniform(low=min_y, high=max_y)
-            new_obs = np.array([new_obs_x, new_obs_y])
-
-        return new_obs
 
     def generate_obstacles(self, start_pose, end_pose, num_obstacles, min_x, max_x, min_y, max_y,
                         clearance=0.8):
@@ -62,12 +47,27 @@ class Map():
             obs[i] = new_obs
 
         for j in zip(*conflicting_end_obs_ind):
-            new_obs = self.regenerate_obstacle(end_pose, obs[i], min_x, max_x, min_y, max_y, clearance)
+            new_obs = self.regenerate_obstacle(end_pose, obs[j], min_x, max_x, min_y, max_y, clearance)
             obs[j] = new_obs
 
 
         print("\n[+] Obstacles now satisfy criteria, ready for simulation!\n")
         return obs
+
+    def regenerate_obstacle(self, pose, obstacle, min_x, max_x, min_y, max_y, clearance):
+        ### Regenerate new obstacle coordinates
+        new_obs_x = np.random.uniform(low=min_x, high=max_x)
+        new_obs_y = np.random.uniform(low=min_y, high=max_y)
+        new_obs = np.array([new_obs_x, new_obs_y])
+
+        # Regenerate new obstacle until obstacle fits criteria.
+        # BEWARE: This may result in an infinite loop
+        while  np.linalg.norm(pose[0:2] - new_obs) < clearance:
+            new_obs_x = np.random.uniform(low=min_x, high=max_x)
+            new_obs_y = np.random.uniform(low=min_y, high=max_y)
+            new_obs = np.array([new_obs_x, new_obs_y])
+
+        return new_obs
 
 if __name__ == "__main__":
     ### Testin map

@@ -17,11 +17,7 @@ MAP_MIN_X = -5
 MAP_MAX_X = 5
 MAP_MIN_Y = -5
 MAP_MAX_Y = 5
-NUM_OBSTACLES = 1000
-
-# Robot stuff
-INITIAL_ROBOT_STATE = np.array([0.0, 0.0, np.pi/2, 0.0, 0.0])     # Robot initial state [x,y,yaw,v,omega].T
-GOAL_POSE = np.array([2.0, -4.0, np.pi/2])
+NUM_OBSTACLES = 25
 
 ### Simulator Crux
 def run_sim(robot, world_map, robot_goal_pose, planner, goal_dist_thresh=0.2, dt=DT, render=True):
