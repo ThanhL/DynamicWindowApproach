@@ -13,15 +13,10 @@ from utils import *
 ### Global simulation params
 MAX_SIM_TIME = 1000
 
-DT = 0.05        # Delta time
-MAP_MIN_X = -5
-MAP_MAX_X = 5
-MAP_MIN_Y = -5
-MAP_MAX_Y = 5
-NUM_OBSTACLES = 10
 
 ### Simulator Crux
-def run_sim(robot, world_map, robot_goal_pose, planner, goal_dist_thresh=0.2, dt=0.05, render=True):
+def run_sim(robot, world_map, robot_goal_pose, planner, goal_dist_thresh=0.2, 
+        dt=0.05, max_sim_time=1000, render=True):
     """ 
     Simulates Dynamic Window Approach algorithm
     """
@@ -41,11 +36,11 @@ def run_sim(robot, world_map, robot_goal_pose, planner, goal_dist_thresh=0.2, dt
     reached_goal = False
     time = 0.0          # Simulation start time
 
-    while time <= MAX_SIM_TIME and not reached_goal:
+    while time <= max_sim_time and not reached_goal:
         print("[+] Elapsed sim_time: {:.3f}".format(time))
 
         ### Update sim time
-        time += DT
+        time += dt
         
         ### Goal Check
         dist_to_goal = np.linalg.norm(robot.x_state[0:2] - robot_goal_pose[0:2])
@@ -57,7 +52,7 @@ def run_sim(robot, world_map, robot_goal_pose, planner, goal_dist_thresh=0.2, dt
             ### DWA control 
             u_t_dwa, best_traj, trajectory_set = planner.calc_dwa_control(robot.x_state, robot_goal_pose,
                                                                         world_map.obstacles)
-            robot.update_state(u_t_dwa, DT)
+            robot.update_state(u_t_dwa, dt)
 
         if render:
             plt.clf()
@@ -133,8 +128,12 @@ def main():
                             robot=fido_robot)
 
     ### Running the simulation
-    run_sim(robot=fido_robot, world_map=world_map, robot_goal_pose=goal_pose,
-        planner=dwa_planner, dt=sim_config["delta_time"])
+    run_sim(robot=fido_robot, 
+        world_map=world_map, 
+        robot_goal_pose=goal_pose,
+        planner=dwa_planner, 
+        dt=sim_config["delta_time"],
+        max_sim_time=sim_config["max_sim_time"])
     
 
 if __name__ == "__main__":
