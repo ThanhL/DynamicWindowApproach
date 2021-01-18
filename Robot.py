@@ -35,18 +35,6 @@ class DifferentialRobot():
         Updates the state of the robot given its equation of motion
         """ 
         v, omega = u_t
-         
-        # if not np.isclose(omega, 0):
-        #     # Omega != 0
-        #     x_state[0] += (v / omega) * np.sin(x_state[2]) - (v / omega) * np.sin(x_state[2] + omega*dt)
-        #     x_state[1] += -(v / omega) * np.cos(x_state[2]) - (v / omega) * np.cos(x_state[2] + omega*dt)
-        #     x_state[2] += omega*dt
-        # else: 
-        #     # Omega == 0
-        #     x_state[0] += v * dt * np.cos(x_state[2])
-        #     x_state[1] += v * dt * np.sin(x_state[2])
-        #     x_state[2] += omega * dt
-
         # Store inputs into state space
         self.x_state[3] = v
         self.x_state[4] = omega

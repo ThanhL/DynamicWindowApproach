@@ -28,6 +28,10 @@ where,
 * start_x, start_y, start_theta: is the starting position in x,y (in m) and starting orientation (in radians) respectively.
 * goal_x, goal_y, goal_theta: is the goal position in x,y (in m) and goal orientation (in radians) respectively.
 
+The program will first plot the initial figure of the environment with the robot and the goal pose. The program will require the user to click/press any button on the matplotlib figure to commence the simulation. After that the program will run the DWA simulation!
+
+Note that in the program the green trajectories are the best trajectory that is found by the DWA planner, and the yellow trajectory's are the other possible trajectories found by the planner while iterating through the resulting velocity search space (Vr from DWA paper).
+
 ### Custom Configuration Files
 Note that this code supports custom user-input configurations for the simulation. The default configuration files are located in the config folder. There are 3 configuration files required for the simulation:
 

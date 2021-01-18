@@ -168,10 +168,6 @@ class DWAPlanner():
         # print("minimum_cost: ", minimum_cost)
         # print("Vr_v: ", Vr_v)
         # print("Vr_omega: ", Vr_omega)
-        # print("num_possible_trajectories: ", num_possible_trajectories)
-        # print("robot_state_shape: ", robot_state.shape)
-        # print("trajectory_set_shape: ", trajectory_set.shape)
-
 
         return best_control_input, best_trajectory, trajectory_set
 
