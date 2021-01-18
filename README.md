@@ -1,5 +1,5 @@
 # DynamicWindowApproach
-Dynamic Window Approach Assignment
+Dynamic Window Approach Project
 
 
 ## Setup/Installation
