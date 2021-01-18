@@ -1,3 +1,4 @@
+import yaml
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,10 +18,10 @@ MAP_MIN_X = -5
 MAP_MAX_X = 5
 MAP_MIN_Y = -5
 MAP_MAX_Y = 5
-NUM_OBSTACLES = 60
+NUM_OBSTACLES = 10
 
 ### Simulator Crux
-def run_sim(robot, world_map, robot_goal_pose, planner, goal_dist_thresh=0.2, dt=DT, render=True):
+def run_sim(robot, world_map, robot_goal_pose, planner, goal_dist_thresh=0.2, dt=0.05, render=True):
     """ 
     Simulates Dynamic Window Approach algorithm
     """
@@ -84,11 +85,28 @@ def main():
                     help='start position (x,y,theta)')
     parser.add_argument("--end_position", nargs=3, type=float, required=True, 
                     help='end position (x,y,theta)')
+    parser.add_argument("--robot_config", type=str, default="./config/robot_config.yaml")
+    parser.add_argument("--planner_config", type=str, default="./config/planner_config.yaml")
+    parser.add_argument("--sim_config", type=str, default="./config/sim_config.yaml")
 
     # Extract user input
     args = parser.parse_args()
     start_position = tuple(args.start_position)
     end_position = tuple(args.end_position)
+
+    robot_config_file = args.robot_config
+    planner_config_file = args.planner_config
+    sim_config_file = args.sim_config
+
+    ### Extract & load configuration files
+    with open(robot_config_file) as robot_config_file:
+        robot_config = yaml.load(robot_config_file, Loader=yaml.FullLoader)
+
+    with open(planner_config_file) as planner_config_file:
+        planner_config = yaml.load(planner_config_file, Loader=yaml.FullLoader)
+
+    with open(sim_config_file) as sim_config_file:
+        sim_config = yaml.load(sim_config_file, Loader=yaml.FullLoader)
 
 
     ## Set initial robot pose and goal pose
@@ -97,25 +115,13 @@ def main():
 
     ### Map Creation
     world_map = Map(start_pose=robot_pose, end_pose=goal_pose,
-                    min_x=MAP_MIN_X, max_x=MAP_MAX_X, min_y=MAP_MIN_Y, max_y=MAP_MAX_Y,
-                    num_obstacles=NUM_OBSTACLES)
+                    min_x=sim_config["map_min_x"], 
+                    max_x=sim_config["map_max_x"], 
+                    min_y=sim_config["map_min_y"], 
+                    max_y=sim_config["map_max_y"],
+                    num_obstacles=sim_config["num_obstacles"])
 
     ### Robot Creation
-    robot_config = {
-                    "minimum_velocity": 0,
-                    "maximum_velocity": 2,
-                    "minimum_omega": -np.pi/2,
-                    "maximum_omega": np.pi/2,
-                    "maximum_acceleration": 2.5,
-                    "maximum_angular_acceleration": np.deg2rad(60), 
-
-                    "v_resolution": 0.1,
-                    "omega_resolution": np.deg2rad(0.25),
-
-                    "robot_type": "circle",
-                    "robot_radius": 0.2
-                    }
-
     # Robot's initial state: (x,y,theta,v_a,omega_a).T
     robot_initial_state = np.array([robot_pose[0], robot_pose[1], robot_pose[2], 0., 0.])
 
@@ -123,26 +129,12 @@ def main():
     fido_robot = DifferentialRobot(robot_config=robot_config, x_init=robot_initial_state)
 
     ### DWA Planner
-    planner_config = {
-                    "alpha": 0.8,
-                    "beta": 0.8,
-                    "gamma": 0.6,
-
-                    "delta_time": DT,
-                    "n_horizon": 20,
-
-                    "obstacle_distance_tolerance": 5,
-                    "stuck_space_tolerance": 0.001,
-
-                    "escape_angular_velocity": np.pi / 4
-                    }
-
     dwa_planner = DWAPlanner(planner_config=planner_config,
                             robot=fido_robot)
 
     ### Running the simulation
     run_sim(robot=fido_robot, world_map=world_map, robot_goal_pose=goal_pose,
-        planner=dwa_planner)
+        planner=dwa_planner, dt=sim_config["delta_time"])
     
 
 if __name__ == "__main__":

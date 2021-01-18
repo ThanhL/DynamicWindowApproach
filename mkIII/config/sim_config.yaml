@@ -1,0 +1,8 @@
+max_sim_time: 1000
+
+delta_time: 0.05        # Delta time
+map_min_x: -5
+map_max_x: 5
+map_min_y: -5
+map_max_y: 5
+num_obstacles: 40

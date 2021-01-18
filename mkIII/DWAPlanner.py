@@ -246,7 +246,8 @@ class DWAPlanner():
         # and the trajectory speed! It's like in control systems!
         # I.e the error is the cost!
         vel_error = vel_ref - trajectory[-1,3]
-
-        return np.abs(vel_error)
+        return vel_error
+        
+        #return np.abs(vel_error)
 
 

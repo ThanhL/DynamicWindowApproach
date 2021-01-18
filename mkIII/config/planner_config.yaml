@@ -1,0 +1,11 @@
+alpha: 0.8
+beta: 0.8
+gamma: 0.6
+
+delta_time: 0.05
+n_horizon: 20
+
+obstacle_distance_tolerance: 5
+stuck_space_tolerance: 0.001
+
+escape_angular_velocity: 0.7853981633974483

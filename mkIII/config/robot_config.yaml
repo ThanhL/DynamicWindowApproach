@@ -1,0 +1,12 @@
+minimum_velocity: 0
+maximum_velocity: 2
+minimum_omega: -1.5707963267948966
+maximum_omega: 1.5707963267948966
+maximum_acceleration: 2.5
+maximum_angular_acceleration: 1.047 
+
+v_resolution: 0.1
+omega_resolution: 0.004
+
+robot_type: "circle"
+robot_radius: 0.2
