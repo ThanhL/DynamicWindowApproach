@@ -10,9 +10,6 @@ from Map import *
 from DWAPlanner import *
 from utils import *
 
-### Global simulation params
-MAX_SIM_TIME = 1000
-
 
 ### Simulator Crux
 def run_sim(robot, world_map, robot_goal_pose, planner, goal_dist_thresh=0.2, 

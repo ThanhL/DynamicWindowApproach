@@ -160,7 +160,7 @@ class DWAPlanner():
 
         ### Prevention of getting stuck in (v,omega) = 0 search space
         if (abs(best_control_input[0]) < self.stuck_space_tol and abs(robot_state[3]) < self.stuck_space_tol):
-            print("[!] Robot stuck in 0 velocity, sending max spin to get out of region.")
+            print("[!] Robot stuck in 0 velocity, sending escape angular velocity to get out of region.")
             best_control_input[1] = self.escape_ang_vel
 
         # print("robot state: ", robot_state)
