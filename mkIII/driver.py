@@ -30,15 +30,17 @@ def run_sim(robot, world_map, robot_goal_pose, planner, goal_dist_thresh=0.2, dt
     if render:
         plt.clf()
         plot_sim_environment(robot, robot_goal_pose, world_map)
-        
+        plt.legend(["obstacles", "robot", "goal"], loc='lower left')
+
         print("--- Press the any key on the figure to start the simulation ---")
         plt.waitforbuttonpress()
 
 
     ### Run DWA planner
+    reached_goal = False
     time = 0.0          # Simulation start time
 
-    while time <= MAX_SIM_TIME:
+    while time <= MAX_SIM_TIME and not reached_goal:
         print("[+] Elapsed sim_time: {:.3f}".format(time))
 
         ### Update sim time
@@ -49,6 +51,7 @@ def run_sim(robot, world_map, robot_goal_pose, planner, goal_dist_thresh=0.2, dt
         if  dist_to_goal < goal_dist_thresh:
             ### We've reached the goal, stop sending controls to the robot!
             print("[!] Reached Goal")
+            reached_goal = True
         else:
             ### DWA control 
             u_t_dwa, best_traj, trajectory_set = planner.calc_dwa_control(robot.x_state, robot_goal_pose,
@@ -58,10 +61,18 @@ def run_sim(robot, world_map, robot_goal_pose, planner, goal_dist_thresh=0.2, dt
         if render:
             plt.clf()
             plot_trajectory_set(trajectory_set, plot_n_traj=20)
-            plot_trajectory(best_traj, color='g')
+            plot_trajectory(best_traj, color='limegreen')
             plot_sim_environment(robot, robot_goal_pose, world_map)
+            
+            plt.legend(["obstacles", "robot", "goal"], loc='lower left')
             plt.pause(0.00001)
 
+    ### Closure
+    if not reached_goal:
+        print("[!] Robot did not reach the goal :(")
+
+    input("--- Press any key to end simulation! ---")
+    exit()
 
 ### Main
 def main():
@@ -91,7 +102,7 @@ def main():
 
     ### Robot Creation
     robot_config = {
-                    "minimum_velocity": -0.0,
+                    "minimum_velocity": 0,
                     "maximum_velocity": 2,
                     "minimum_omega": -np.pi/2,
                     "maximum_omega": np.pi/2,
@@ -121,7 +132,9 @@ def main():
                     "n_horizon": 20,
 
                     "obstacle_distance_tolerance": 5,
-                    "stuck_space_tolerance": 0.001
+                    "stuck_space_tolerance": 0.001,
+
+                    "escape_angular_velocity": np.pi / 4
                     }
 
     dwa_planner = DWAPlanner(planner_config=planner_config,

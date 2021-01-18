@@ -24,6 +24,9 @@ class DWAPlanner():
         # (search space & the robot's actual velocity)
         self.stuck_space_tol = planner_config["stuck_space_tolerance"]
 
+        # Escape velocity from 0 velocity 'stuck space'
+        self.escape_ang_vel = planner_config["escape_angular_velocity"]
+
     ### Dynamic window calculations
     # Vs: Space of possible velocities
     def calculate_Vs(self):
@@ -153,21 +156,21 @@ class DWAPlanner():
                         best_control_input[:] = control_input
                         best_trajectory = trajectory
 
-        print("[!] Best Found (v,w): ({:.3f}, {:.3f}) \tCost: {:.3f}".format(v, omega, minimum_cost))
+        # print("[!] Best Found (v,w): ({:.3f}, {:.3f}) \tCost: {:.3f}".format(v, omega, minimum_cost))
 
         ### Prevention of getting stuck in (v,omega) = 0 search space
         if (abs(best_control_input[0]) < self.stuck_space_tol and abs(robot_state[3]) < self.stuck_space_tol):
             print("[!] Robot stuck in 0 velocity, sending max spin to get out of region.")
-            control_input[0] = np.pi / 3
+            best_control_input[1] = self.escape_ang_vel
 
-        print("robot state: ", robot_state)
-        print("best_control_input: ", best_control_input)
-        print("minimum_cost: ", minimum_cost)
-        print("Vr_v: ", Vr_v)
-        print("Vr_omega: ", Vr_omega)
-        print("num_possible_trajectories: ", num_possible_trajectories)
-        print("robot_state_shape: ", robot_state.shape)
-        print("trajectory_set_shape: ", trajectory_set.shape)
+        # print("robot state: ", robot_state)
+        # print("best_control_input: ", best_control_input)
+        # print("minimum_cost: ", minimum_cost)
+        # print("Vr_v: ", Vr_v)
+        # print("Vr_omega: ", Vr_omega)
+        # print("num_possible_trajectories: ", num_possible_trajectories)
+        # print("robot_state_shape: ", robot_state.shape)
+        # print("trajectory_set_shape: ", trajectory_set.shape)
 
 
         return best_control_input, best_trajectory, trajectory_set

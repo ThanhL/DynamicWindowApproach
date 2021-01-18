@@ -11,13 +11,13 @@ def plot_robot(robot):
 
     if robot.robot_type == "circle":
         # plot robot circle position
-        robot_circle = plt.Circle((robot_x, robot_y), robot.robot_radius, color="k")
+        robot_circle = plt.Circle((robot_x, robot_y), robot.robot_radius, color="k", label="robot")
         plt.gcf().gca().add_artist(robot_circle)
 
         # plot robot front facing direction (represented by a bar)
         robot_front_x, robot_front_y = (np.array([robot_x, robot_y]) + 
                                     np.array([np.cos(robot_theta), np.sin(robot_theta)]) * robot.robot_radius)
-        plt.plot([robot_x, robot_front_x], [robot_y, robot_front_y], "-w")
+        plt.plot([robot_x, robot_front_x], [robot_y, robot_front_y], "-r", label=' label="robot"')
 
 def plot_robot_goalpose(robot_goal_pose):
     """
@@ -27,13 +27,13 @@ def plot_robot_goalpose(robot_goal_pose):
     robot_gx, robot_gy, robot_gtheta = robot_goal_pose
 
     # Plot robot goal
-    plt.plot(robot_gx, robot_gy, 'Dc')
+    plt.plot(robot_gx, robot_gy, 'Dc', label="goal")
 
 def plot_obstacles(obstacles):
     """
     Plots the obstacles of the world map
     """
-    plt.plot(obstacles[:,0], obstacles[:,1], '.b')
+    plt.plot(obstacles[:,0], obstacles[:,1], '.b', label="obstacles")
 
 def plot_sim_environment(robot, robot_goal_pose, world_map):
     """ 
@@ -48,13 +48,20 @@ def plot_sim_environment(robot, robot_goal_pose, world_map):
     plt.axis("equal")
     plt.grid(True)
 
+    plt.title("DWA simulation")
+    plt.xlabel("x (m)")
+    plt.ylabel("y (m)")   
+
+        
+
+
 ### DWA Trajectory Plots   
-def plot_trajectory(trajectory, color='r'):
+def plot_trajectory(trajectory, color='y'):
     """
     Plots the trajectory 
     """
     if trajectory.ndim >= 2:
-        plt.plot(trajectory[:,0], trajectory[:,1], color)
+        plt.plot(trajectory[:,0], trajectory[:,1], color=color, label='_nolegend_')
 
 def plot_trajectory_set(trajectory_set, plot_n_traj=1):
     """
