@@ -1,5 +1,8 @@
 import numpy as np
+from copy import deepcopy
 
+from Map import *
+from utils import *
 
 class DifferentialRobot():
     """
@@ -10,7 +13,6 @@ class DifferentialRobot():
     """
     def __init__(self, robot_config, x_init):
         ### Robot specification
-        # TODO: note these config variables should be inside the robot planner
         self.min_vel = robot_config["minimum_velocity"]             # Min. linear velocity
         self.max_vel = robot_config["maximum_velocity"]             # Max. linear velocity
         self.min_omega = robot_config["minimum_omega"]              # Min. Angular velocity
@@ -21,23 +23,60 @@ class DifferentialRobot():
         self.v_resolution = robot_config["v_resolution"]                # Linear velocity resolution
         self.omega_resolution = robot_config["omega_resolution"]            # Angular velocity resolution
 
-        self.robot_type = robot_config["robot_type"]                        # Robot shape specification (2D)
-
-        # TODO: put this into a Class type? --> robot specs?
+        self.robot_type = robot_config["robot_type"]                # Robot shape specification (2D)
         self.robot_radius = robot_config["robot_radius"]
-
 
         ### State space: (x,y,theta, v, omega).T
         self.x_state = x_init
 
 
+    def update_state(self, u_t, dt):
+        """
+        Updates the state of the robot given its equation of motion
+        """ 
+        v, omega = u_t
+         
+        # if not np.isclose(omega, 0):
+        #     # Omega != 0
+        #     x_state[0] += (v / omega) * np.sin(x_state[2]) - (v / omega) * np.sin(x_state[2] + omega*dt)
+        #     x_state[1] += -(v / omega) * np.cos(x_state[2]) - (v / omega) * np.cos(x_state[2] + omega*dt)
+        #     x_state[2] += omega*dt
+        # else: 
+        #     # Omega == 0
+        #     x_state[0] += v * dt * np.cos(x_state[2])
+        #     x_state[1] += v * dt * np.sin(x_state[2])
+        #     x_state[2] += omega * dt
+
+        # Store inputs into state space
+        self.x_state[3] = v
+        self.x_state[4] = omega
+
+        # Update states with motion model
+        self.x_state[0] += v * dt * np.cos(self.x_state[2])
+        self.x_state[1] += v * dt * np.sin(self.x_state[2])
+        self.x_state[2] += omega * dt
+
+        return self.x_state
+
+    def predict_pose(self, robot_pose, u_t, dt):
+        next_pose = np.zeros(3)
+        v, omega = u_t
+
+        next_pose[0] = robot_pose[0] + v * dt * np.cos(robot_pose[2])
+        next_pose[1] = robot_pose[1] + v * dt * np.sin(robot_pose[2])
+        next_pose[2] = robot_pose[2] + omega * dt
+
+        return next_pose
+
     def motion_model(self, x_state, u_t, dt):
         """
-        Motion model of robot
+        Motion model of robot. 
+
+        Note this function is only used for prediction for future trajectories
+        (so it doesn't update states),
 
         u_t: Robot input, u_t = (v_t, omega_t) = (commanded linear vel, commanded angular vel)
         """
-        # TODO: probably keep it as state
         x_t, y_t, theta_t, v_t, omega_t = x_state
 
         x_state[0] += u_t[0] * dt * np.cos(theta_t)
@@ -47,26 +86,5 @@ class DifferentialRobot():
         x_state[4] = u_t[1]
 
         return x_state
-
-
-
-
-if __name__ == "__main__":
-    robot_config = {
-                    "minimum_velocity": 0.1,
-                    "maximum_velocity": 0.22,
-                    "minimum_omega": 0.1,
-                    "maximum_omega": 2.84,
-                    "maximum_acceleration": 0.2,
-                    "maximum_angular_acceleration": np.deg2rad(40), 
-
-                    "v_resolution": 0.02,
-                    "omega_resolution": np.deg2rad(0.1),
-
-                    "robot_type": "circle",
-                    "robot_radius": 1.
-                    }
-
-    x_init = np.array([0.0, 0.0, 0.0, 0.0, 0.0])
 
 
